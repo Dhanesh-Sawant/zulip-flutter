@@ -85,6 +85,9 @@ class TestGlobalStore extends GlobalStore {
   /// [PerAccountStore] when [perAccount] is subsequently called for this
   /// account, in particular when a [PerAccountStoreWidget] is mounted.
   Future<void> add(Account account, InitialSnapshot initialSnapshot) async {
+    assert(initialSnapshot.zulipVersion == account.zulipVersion);
+    assert(initialSnapshot.zulipMergeBase == account.zulipMergeBase);
+    assert(initialSnapshot.zulipFeatureLevel == account.zulipFeatureLevel);
     await insertAccount(account.toCompanion(false));
     assert(!_initialSnapshots.containsKey(account.id));
     _initialSnapshots[account.id] = initialSnapshot;
@@ -126,6 +129,7 @@ class TestGlobalStore extends GlobalStore {
 
   static const Duration removeAccountDuration = Duration(milliseconds: 1);
   Duration? loadPerAccountDuration;
+  Object? loadPerAccountException;
 
   /// Consume the log of calls made to [doRemoveAccount].
   List<int> takeDoRemoveAccountCalls() {
@@ -146,6 +150,9 @@ class TestGlobalStore extends GlobalStore {
   Future<PerAccountStore> doLoadPerAccount(int accountId) async {
     if (loadPerAccountDuration != null) {
       await Future<void>.delayed(loadPerAccountDuration!);
+    }
+    if (loadPerAccountException != null) {
+      throw loadPerAccountException!;
     }
     final initialSnapshot = _initialSnapshots[accountId]!;
     final store = PerAccountStore.fromInitialSnapshot(
